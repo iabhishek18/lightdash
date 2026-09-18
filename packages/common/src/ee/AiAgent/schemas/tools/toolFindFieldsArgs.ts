@@ -1,10 +1,14 @@
 import { z } from 'zod';
 import { type ToolDescriptionContext } from '../defineTool';
-import { baseOutputMetadataSchema } from '../outputMetadata';
+import {
+    baseOutputMetadataSchema,
+    structuredToolOutputSchema,
+} from '../outputMetadata';
 import { createToolSchema } from '../toolSchemaBuilder';
 import { makeBuiltInToolResultGuard } from './builtInToolResultGuard';
 import { toolNameFor } from './discoveryToolNames';
 
+/** @deprecated Legacy `findFields` tool contract, kept for historical tool calls. */
 export const TOOL_FIND_FIELDS_DESCRIPTION = ({
     runtime,
     toolName,
@@ -25,6 +29,7 @@ Usage tips:
 `;
 };
 
+/** @deprecated Legacy `findFields` tool contract, kept for historical tool calls. */
 export const toolFindFieldsArgsSchema = createToolSchema()
     .extend({
         table: z.string().describe('The table to search in.'),
@@ -37,8 +42,10 @@ export const toolFindFieldsArgsSchema = createToolSchema()
     .withPagination()
     .build();
 
+/** @deprecated Legacy `findFields` tool contract, kept for historical tool calls. */
 export const toolFindFieldsArgsSchemaTransformed = toolFindFieldsArgsSchema;
 
+/** @deprecated Legacy `findFields` tool contract, kept for historical tool calls. */
 export const findFieldsRankingMetadataSchema = z.object({
     searchQueries: z.array(
         z.object({
@@ -70,24 +77,54 @@ export const findFieldsRankingMetadataSchema = z.object({
 
 const findFieldsSearchSuccessSchema = z.object({
     status: z.literal('success'),
-    searchQuery: z.string(),
+    searchQuery: z.string().describe('The field label that was searched for.'),
     page: z.number().nullable(),
     pageSize: z.number().nullable(),
     totalPageCount: z.number().nullable(),
-    totalResults: z.number().nullable(),
+    totalResults: z
+        .number()
+        .nullable()
+        .describe('Total matches across all pages.'),
     fields: z.array(
         z.object({
-            type: z.string(),
-            baseTable: z.string(),
+            type: z
+                .string()
+                .describe('Whether the field is a "metric" or a "dimension".'),
+            baseTable: z.string().describe('Table the field belongs to.'),
             name: z.string(),
-            fieldId: z.string(),
-            fieldType: z.string(),
-            fieldFilterType: z.string(),
-            searchRank: z.number().nullable().optional(),
-            chartUsage: z.number().nullable().optional(),
-            usageInVerifiedCharts: z.number(),
-            isFromJoinedTable: z.boolean(),
-            caseSensitiveFilters: z.boolean().nullable(),
+            fieldId: z
+                .string()
+                .describe(
+                    'Identifier to use in queries and filters (`<table>_<name>`).',
+                ),
+            fieldType: z
+                .string()
+                .describe('Value type (e.g. string, number, date, sum).'),
+            fieldFilterType: z
+                .string()
+                .describe('Filter type the field accepts.'),
+            searchRank: z
+                .number()
+                .nullable()
+                .optional()
+                .describe('Relevance score between 0 and 1.'),
+            chartUsage: z
+                .number()
+                .nullable()
+                .optional()
+                .describe('Number of saved charts using the field.'),
+            usageInVerifiedCharts: z
+                .number()
+                .describe('Number of verified charts using the field.'),
+            isFromJoinedTable: z
+                .boolean()
+                .describe('True when the field comes from a joined table.'),
+            caseSensitiveFilters: z
+                .boolean()
+                .nullable()
+                .describe(
+                    'Whether string filters are case-sensitive; null for non-string fields.',
+                ),
             note: z.string().nullable(),
             label: z.string(),
             aiHints: z.array(z.string()),
@@ -100,34 +137,46 @@ const findFieldsSearchSuccessSchema = z.object({
 
 const findFieldsSearchErrorSchema = z.object({
     status: z.literal('error'),
-    searchQuery: z.string(),
+    searchQuery: z.string().describe('The field label that was searched for.'),
     error: z.string(),
 });
 
-export const findFieldsResultSchema = z.object({
-    searchResults: z.array(
-        z.discriminatedUnion('status', [
-            findFieldsSearchSuccessSchema,
-            findFieldsSearchErrorSchema,
-        ]),
-    ),
+/** @deprecated Legacy `findFields` tool contract, kept for historical tool calls. */
+export const toolFindFieldsStructuredContentSchema = z.object({
+    searchResults: z
+        .array(
+            z.discriminatedUnion('status', [
+                findFieldsSearchSuccessSchema,
+                findFieldsSearchErrorSchema,
+            ]),
+        )
+        .describe('One entry per requested search query, in request order.'),
 });
 
+/** @deprecated Legacy `findFields` tool contract, kept for historical tool calls. */
 export const toolFindFieldsMetadataSchema = baseOutputMetadataSchema.extend({
     ranking: findFieldsRankingMetadataSchema.optional(),
 });
 
-export const toolFindFieldsOutputSchema = z.object({
-    result: z.string(),
+/** @deprecated Legacy `findFields` tool contract, kept for historical tool calls. */
+export const toolFindFieldsOutputSchema = structuredToolOutputSchema({
     metadata: toolFindFieldsMetadataSchema,
+    structuredContent: toolFindFieldsStructuredContentSchema,
 });
 
+/** @deprecated Legacy `findFields` tool contract, kept for historical tool calls. */
 export const isToolFindFieldsResult = makeBuiltInToolResultGuard(
     'findFields',
     toolFindFieldsMetadataSchema,
 );
 
+/** @deprecated Legacy `findFields` tool contract, kept for historical tool calls. */
 export type ToolFindFieldsArgs = z.infer<typeof toolFindFieldsArgsSchema>;
+/** @deprecated Legacy `findFields` tool contract, kept for historical tool calls. */
 export type ToolFindFieldsArgsTransformed = ToolFindFieldsArgs;
-export type FindFieldsResult = z.infer<typeof findFieldsResultSchema>;
+/** @deprecated Legacy `findFields` tool contract, kept for historical tool calls. */
+export type ToolFindFieldsStructuredContent = z.infer<
+    typeof toolFindFieldsStructuredContentSchema
+>;
+/** @deprecated Legacy `findFields` tool contract, kept for historical tool calls. */
 export type ToolFindFieldsOutput = z.infer<typeof toolFindFieldsOutputSchema>;
